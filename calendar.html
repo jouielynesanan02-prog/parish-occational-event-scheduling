@@ -1,0 +1,380 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Event Calendar</title>
+  <style>
+    /* --- PAGE LAYOUT FIX --- */
+    body {
+      font-family: Arial, sans-serif;
+      background: #f5f6fa;
+      display: flex;
+      justify-content: center;
+      align-items: flex-start; /* fixes vertical jumping */
+      height: 100vh;
+      margin: 0;
+      overflow-y: auto;
+      padding-top: 40px;
+    }
+
+    .calendar-container {
+      background: white;
+      border-radius: 10px;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+      width: 900px;
+      padding: 20px;
+      text-align: center;
+      position: sticky;
+      top: 40px;
+    }
+
+    /* --- HEADER --- */
+    .header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .month-year {
+      font-size: 1.4rem;
+      font-weight: bold;
+    }
+    .nav-btn {
+      cursor: pointer;
+      background: #3498db;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      padding: 5px 10px;
+      transition: background 0.3s;
+    }
+    .nav-btn:hover {
+      background: #2980b9;
+    }
+
+    /* --- EVENT BUTTONS --- */
+    .events {
+      margin-top: 15px;
+      display: flex;
+      gap: 10px;
+    }
+    .event-btn {
+      flex: 1;
+      padding: 10px;
+      border: 1px solid #ccc;
+      border-radius: 5px;
+      cursor: pointer;
+      background: #ecf0f1;
+      font-weight: bold;
+      transition: background 0.3s, color 0.3s;
+    }
+    .event-btn.active {
+      background: #3498db;
+      color: white;
+    }
+
+    /* --- CALENDAR --- */
+    .calendar {
+      margin-top: 20px;
+      display: grid;
+      grid-template-columns: repeat(7, 1fr);
+      gap: 5px;
+    }
+    .weekday {
+      font-weight: bold;
+      text-align: center;
+    }
+    .day {
+      background: #fff;
+      border-radius: 5px;
+      padding: 10px;
+      text-align: center;
+      cursor: pointer;
+      border: 1px solid #eee;
+      min-height: 70px;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      transition: background 0.3s;
+    }
+    .day.disabled {
+      color: #bbb;
+      background: #f0f0f0;
+      cursor: not-allowed;
+    }
+    .day:hover:not(.disabled) {
+      background: #dff0ff;
+    }
+    .label {
+      font-size: 12px;
+      margin-top: 4px;
+      font-weight: bold;
+    }
+    .regular {
+      color: green;
+    }
+    .extra {
+      color: goldenrod;
+    }
+    .unavailable {
+      color: gray;
+    }
+
+    /* --- MODAL --- */
+    .modal {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0,0,0,0.4);
+      display: none;
+      align-items: center;
+      justify-content: center;
+    }
+    .modal-content {
+      background: #fff;
+      padding: 20px;
+      border-radius: 10px;
+      width: 300px;
+      text-align: center;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+    }
+    .close {
+      cursor: pointer;
+      color: red;
+      font-weight: bold;
+      float: right;
+    }
+
+    /* --- FOOTER --- */
+    .footer {
+      margin-top: 10px;
+      font-size: 0.9rem;
+      color: #333;
+    }
+    #viewReservations {
+      margin-top: 15px;
+      padding: 10px;
+      background: #2ecc71;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      transition: background 0.3s;
+    }
+    #viewReservations:hover {
+      background: #27ae60;
+    }
+  </style>
+</head>
+<body>
+  <div class="calendar-container">
+    <div class="header">
+      <button class="nav-btn" id="prev">◀</button>
+      <div class="month-year" id="monthYear"></div>
+      <button class="nav-btn" id="next">▶</button>
+    </div>
+
+    <div class="events">
+      <button class="event-btn active" data-event="baptismal">Baptismal</button>
+      <button class="event-btn" data-event="burial">Burial</button>
+      <button class="event-btn" data-event="wedding">Wedding</button>
+    </div>
+
+    <div class="calendar" id="calendar"></div>
+    <button id="viewReservations">View Reservations</button>
+    <div class="footer">
+      Mondays and Tuesdays are not available for any event. Click a day to select a time.
+    </div>
+  </div>
+
+  <!-- MODAL -->
+  <div class="modal" id="modal">
+    <div class="modal-content">
+      <div class="close" id="close">✖</div>
+      <h3 id="modalTitle"></h3>
+      <p id="modalDate"></p>
+      <input type="time" id="timeInput" />
+      <button class="nav-btn" id="confirm">Confirm</button>
+      <p id="result"></p>
+    </div>
+  </div>
+
+  <script>
+    const monthYear = document.getElementById('monthYear');
+    const calendar = document.getElementById('calendar');
+    const modal = document.getElementById('modal');
+    const modalTitle = document.getElementById('modalTitle');
+    const modalDate = document.getElementById('modalDate');
+    const timeInput = document.getElementById('timeInput');
+    const result = document.getElementById('result');
+    const closeBtn = document.getElementById('close');
+    const confirmBtn = document.getElementById('confirm');
+    const viewBtn = document.getElementById('viewReservations');
+
+    let currentDate = new Date();
+    let selectedEvent = 'baptismal';
+    let selectedDate = null;
+
+    // --- EVENT SELECTION ---
+    document.querySelectorAll('.event-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.event-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        selectedEvent = btn.dataset.event;
+        renderCalendar();
+      });
+    });
+
+    // --- MONTH NAVIGATION ---
+    document.getElementById('prev').addEventListener('click', () => {
+      currentDate.setMonth(currentDate.getMonth() - 1);
+      renderCalendar();
+    });
+    document.getElementById('next').addEventListener('click', () => {
+      currentDate.setMonth(currentDate.getMonth() + 1);
+      renderCalendar();
+    });
+
+    // --- CALENDAR RENDER ---
+    function renderCalendar() {
+      calendar.innerHTML = '';
+      const year = currentDate.getFullYear();
+      const month = currentDate.getMonth();
+      const firstDay = new Date(year, month, 1);
+      const lastDay = new Date(year, month + 1, 0);
+      const startDay = firstDay.getDay();
+
+      monthYear.textContent = `${firstDay.toLocaleString('default', { month: 'long' })} ${year}`;
+
+      const weekdays = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+      weekdays.forEach(day => {
+        const div = document.createElement('div');
+        div.textContent = day;
+        div.classList.add('weekday');
+        calendar.appendChild(div);
+      });
+
+      for (let i = 0; i < startDay; i++) calendar.appendChild(document.createElement('div'));
+
+      for (let d = 1; d <= lastDay.getDate(); d++) {
+        const date = new Date(year, month, d);
+        const day = document.createElement('div');
+        day.classList.add('day');
+        day.textContent = d;
+
+        const label = document.createElement('div');
+        label.classList.add('label');
+
+        // Disable Mondays and Tuesdays
+        if (date.getDay() === 1 || date.getDay() === 2) {
+          day.classList.add('disabled');
+          label.textContent = 'Not Available';
+          label.classList.add('unavailable');
+        } else {
+          const isReg = isRegularDay(date, selectedEvent);
+          label.textContent = isReg ? 'Regular' : 'Extra Regular';
+          label.classList.add(isReg ? 'regular' : 'extra');
+          day.addEventListener('click', () => openModal(date));
+        }
+
+        day.appendChild(label);
+        calendar.appendChild(day);
+      }
+    }
+
+    // --- RULES PER EVENT ---
+    function isRegularDay(date, event) {
+      const day = date.getDay();
+      if (event === 'baptismal') return (day === 0);              // Sunday
+      if (event === 'burial') return ([0,3,6].includes(day));     // Sun, Wed, Sat
+      if (event === 'wedding') return isThirdSaturday(date);      // 3rd Saturday
+      return false;
+    }
+
+    function isThirdSaturday(date) {
+      if (date.getDay() !== 6) return false;
+      const firstDay = new Date(date.getFullYear(), date.getMonth(), 1);
+      let count = 0;
+      for (let d = 1; d <= date.getDate(); d++) {
+        const test = new Date(date.getFullYear(), date.getMonth(), d);
+        if (test.getDay() === 6) count++;
+        if (count === 3 && test.getDate() === date.getDate()) return true;
+      }
+      return false;
+    }
+
+    // --- MODAL ---
+    function openModal(date) {
+      selectedDate = date;
+      modal.style.display = 'flex';
+      modalTitle.textContent = `Select time for ${selectedEvent}`;
+      modalDate.textContent = date.toDateString();
+      timeInput.value = '';
+      result.textContent = '';
+    }
+
+    closeBtn.addEventListener('click', () => modal.style.display = 'none');
+    window.addEventListener('click', e => { if (e.target === modal) modal.style.display = 'none'; });
+
+    // --- REGULAR TIME RULES ---
+    function checkRegular(date, time, event) {
+      const [hour, minute] = time.split(':').map(Number);
+      const day = date.getDay();
+      if (event === 'baptismal') return (day === 0 && hour === 11 && minute === 30);
+      if (event === 'burial') return ([0,3,6].includes(day) && hour === 13 && minute === 0);
+      if (event === 'wedding') return (isThirdSaturday(date) && hour === 8 && minute === 0);
+      return false;
+    }
+
+    // --- SAVE RESERVATION ---
+    confirmBtn.addEventListener('click', async () => {
+  const time = timeInput.value;
+  if (!time) return alert('Please select a time');
+
+  const regular = checkRegular(selectedDate, time, selectedEvent);
+
+  const payload = {
+    event: selectedEvent,
+    date: selectedDate.toISOString().split('T')[0],
+    time: time
+  };
+
+  // Save to database
+  const res = await fetch(`calendar.php?action=save`, {
+    method: 'POST',
+    body: JSON.stringify(payload)
+  });
+  const data = await res.json();
+
+  if (data.status === 'error') {
+    result.textContent = data.message;
+    return;
+  }
+
+  // Show message
+  result.textContent = "Reservation saved! Redirecting...";
+  result.style.color = "green";
+
+  // Wait 1 second, then redirect to the correct form
+  setTimeout(() => {
+    const params = new URLSearchParams({
+      date: payload.date,
+      time: payload.time
+    }).toString();
+
+    if (selectedEvent === 'baptismal') {
+      window.location.href = `baptismal.html?${params}`;
+    } else if (selectedEvent === 'burial') {
+      window.location.href = `burial.html?${params}`;
+    } else if (selectedEvent === 'wedding') {
+      window.location.href = `marriage.html?${params}`;
+    }
+  }, 1000);
+});
+
+  </script>
+</body>
+</html>

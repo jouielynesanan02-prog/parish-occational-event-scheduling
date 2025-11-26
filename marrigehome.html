@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+          <meta charset="UTF-8" />
+          <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+          <title>Marriage Application Form</title>
+  <style>
+      body {
+                font-family: 'Times New Roman', Times, serif;
+              background-image: url('sia.jpg');
+              background-size: cover;
+              background-position: center;
+              background-repeat: no-repeat;
+              display: flex;
+              justify-content: center;
+              align-items: flex-start;
+              padding: 40px 20px;
+              box-sizing: border-box;
+              }
+
+              .container {
+               background-color: #ffffff;
+              padding: 30px 40px;
+              border-radius: 10px;
+              box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+              max-width: 700px;
+              width: 100%;
+              box-sizing: border-box;
+              }
+
+              h1, h2 {
+                text-align: center;
+                color: #000000;
+              }
+
+              form label {
+                display: block;
+                margin-top: 15px;
+                font-weight: bold;
+              }
+
+              form input, form select, form textarea {
+                width: 100%;
+                padding: 8px;
+                margin-top: 5px;
+                border: 1px solid #ccc;
+                border-radius: 5px;
+              }
+
+              .submit-btn {
+                background-color: #2193b0;
+                color: black;
+                padding: 12px 20px;
+                border: none;
+                border-radius: 5px;
+                cursor: pointer;
+                width: 100%;
+                font-size: 16px;
+              }
+
+              .requirements {
+                background: #fff8f6;
+                padding: 15px;
+                border-radius: 8px;
+                margin-top: 20px;
+                border: 1px solid #f5c2be;
+              }
+
+              .requirements ul {
+                margin-top: 10px;
+              }
+
+              #result {
+                margin-top: 10px;
+                font-weight: bold;
+                font-size: 16px;
+              }
+
+              .regular {
+                color: green;
+              }
+
+              .extra {
+                color: orange;
+              }
+    </style>
+  </head>
+<body>
+
+<div class="container">
+  <h1>Marriage Application Form</h1>
+  <form action="marriage_save.php" method="POST">
+    <h2>Bride's Information</h2>
+    <label>Full Name:</label>
+    <input type="text" name="bride_name" required>
+  
+    <label>Date of Birth:</label>
+    <input type="date" name="bride_dob" required>
+  
+    <label>Address:</label>
+    <textarea name="bride_address" rows="3" required></textarea>
+  
+    <label>Nationality:</label>
+    <input type="text" name="bride_nationality" required>
+  
+    <h2>Groom's Information</h2>
+    <label>Full Name:</label>
+    <input type="text" name="groom_name" required>
+  
+    <label>Date of Birth:</label>
+    <input type="date" name="groom_dob" required>
+  
+    <label>Address:</label>
+    <textarea name="groom_address" rows="3" required></textarea>
+  
+    <label>Nationality:</label>
+    <input type="text" name="groom_nationality" required>
+  
+    <h2>Marriage Schedule</h2>
+    <!-- Added name attributes -->
+    <label for="date">Choose Date:</label>
+    <input type="date" id="date" name="marriage_date">
+  
+    <label for="time">Choose Time:</label>
+    <input type="time" id="time" name="marriage_time">
+  
+    <div id="result"></div>
+  
+    <div class="requirements">
+      <h2>Marriage Requirements</h2>
+      <ul>
+        <li>Baptismal Certificate</li>
+        <li>Confirmation Certificate</li>
+        <li>Birth Certificate (Photocopy)</li>
+        <li>Status of Liberty</li>
+        <li>Permit to Marry</li>
+        <li>Marriage Bann</li>
+        <li>Marriage License (LCR)</li>
+        <li>Article 34 (Affidavit)</li>
+        <li>Recommendation from Area</li>
+        <li>Canonical Investigation</li>
+        <li>Pre Cana Seminar</li>
+      </ul>
+    </div>
+  
+    <!-- Moved submit button inside form -->
+    <button type="submit" class="submit-btn">Submit</button>
+  </form>
+  
+</body>
+</html>
